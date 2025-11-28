@@ -371,6 +371,44 @@ void printDFAMatrix(const vector<set<int>>& dfaStates,
     }
 }
 
+bool testStringOnDFA(const string& testStr,
+                     const vector<map<char, int>>& dfaTrans,
+                     const set<int>& acceptStates) {
+    cout << "\n========== STRING MATCHING: \"" << testStr << "\" ==========\n";
+
+    int currentState = 0;
+    cout << "Step-by-step execution:\n";
+    cout << "Initial State: " << currentState << "\n";
+
+    for (size_t i = 0; i < testStr.length(); i++) {
+        char symbol = testStr[i];
+
+        auto it = dfaTrans[currentState].find(symbol);
+        if (it == dfaTrans[currentState].end()) {
+            cout << "Step " << (i + 1) << ": Read '" << symbol
+                 << "' from State " << currentState
+                 << " -> STUCK (No transition)\n";
+            cout << "Result: REJECTED\n";
+            return false;
+        }
+
+        int nextState = it->second;
+        cout << "Step " << (i + 1) << ": Read '" << symbol
+             << "' from State " << currentState
+             << " -> State " << nextState << "\n";
+
+        currentState = nextState;
+    }
+
+    bool accepted = (acceptStates.count(currentState) > 0);
+    cout << "Final State: " << currentState << "\n";
+    cout << "Result: " << (accepted ? "ACCEPTED" : "REJECTED")
+         << " (Final state is " << (accepted ? "" : "NOT ")
+         << "an accept state)\n";
+
+    return accepted;
+}
+
 int main() {
     // Fancy banner
     cout <<
@@ -511,6 +549,19 @@ int main() {
         "║ PROCESSING COMPLETE                                  ║\n";
     cout <<
         "╚═══════════════════════════════════════════════════════╝\n";
+    cout << "\n========== STRING TESTING ==========\n";
+    cout << "Enter number of test strings: ";
 
+    int numTests;
+    cin >> numTests;
+    cin.ignore(); // flush newline
+
+    for (int i = 0; i < numTests; i++) {
+        cout << "\nTest " << (i + 1) << " - Enter string: ";
+        string testStr;
+        getline(cin, testStr);
+
+        testStringOnDFA(testStr, dfaTransitions, dfaAcceptStates);
+    }
     return 0;
 }
