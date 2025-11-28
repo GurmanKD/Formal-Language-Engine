@@ -232,6 +232,57 @@ string convertToPostfix(const string& infix) {
     return output;
 }
 
+set<int> computeEpsilonClosure(const vector<AutomatonState>& nfa,
+                               const set<int>& initialStates) {
+    set<int> closure = initialStates;
+    stack<int> workStack;
+
+    // Initialize stack with the starting states
+    for (int state : initialStates) {
+        workStack.push(state);
+    }
+
+    // DFS/BFS over epsilon transitions
+    while (!workStack.empty()) {
+        int current = workStack.top();
+        workStack.pop();
+
+        for (int target : nfa[current].epsilonMoves) {
+            if (closure.find(target) == closure.end()) {
+                closure.insert(target);
+                workStack.push(target);
+            }
+        }
+    }
+
+    return closure;
+}
+
+set<int> computeMove(const vector<AutomatonState>& nfa,
+                     const set<int>& states,
+                     char symbol) {
+    set<int> result;
+
+    for (int state : states) {
+        auto it = nfa[state].symbolMoves.find(symbol);
+        if (it != nfa[state].symbolMoves.end()) {
+            // Insert all target states for this symbol
+            result.insert(it->second.begin(), it->second.end());
+        }
+    }
+
+    return result;
+}
+
+string stateSetToString(const set<int>& states) {
+    string key;
+    for (int s : states) {
+        key += to_string(s);
+        key += ",";  // delimiter
+    }
+    return key;
+}
+
 int main() {
     cout << "Regex to NFA to DFA Converter\n";
     return 0;
