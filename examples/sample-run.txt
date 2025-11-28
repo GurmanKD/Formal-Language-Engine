@@ -1,0 +1,31 @@
+Example run for regex: (a|b)*abb
+
+Input:
+(a|b)*abb
+
+Preprocessing:
+Original Regex: (a|b)*abb
+With Concatenation: (a|b)*.a.b.b
+Postfix Notation: ab|*a.b.b.
+
+NFA:
+Total NFA States: 14
+Start State: 6
+Accept State: 13
+Alphabet: {a b}
+[... NFA adjacency matrix output ...]
+
+DFA:
+Total DFA States: 5
+Start State: 0
+Accept States: {4}
+[... DFA adjacency matrix output ...]
+
+String testing:
+Number of test strings: 2
+
+Test 1:
+abb -> ACCEPTED
+
+Test 2:
+abbab -> REJECTED
