@@ -372,6 +372,145 @@ void printDFAMatrix(const vector<set<int>>& dfaStates,
 }
 
 int main() {
-    cout << "Regex to NFA to DFA Converter\n";
+    // Fancy banner
+    cout <<
+        "╔═══════════════════════════════════════════════════════╗\n";
+    cout <<
+        "║ REGEX TO NFA TO DFA CONVERTER WITH STRING MATCHING   ║\n";
+    cout <<
+        "║ Using Thompson's & Subset Construction               ║\n";
+    cout <<
+        "╚═══════════════════════════════════════════════════════╝\n\n";
+
+    // 1. Read regex
+    cout << "Enter regular expression: ";
+    string regex;
+    getline(cin, regex);
+
+    // Remove spaces (optional)
+    regex.erase(remove(regex.begin(), regex.end(), ' '), regex.end());
+
+    // 2. Preprocess and convert to postfix
+    cout << "\n========== PREPROCESSING ==========\n";
+    string withConcat = insertConcatenation(regex);
+    cout << "Original Regex: " << regex << "\n";
+    cout << "With Concatenation: " << withConcat << "\n";
+
+    string postfix = convertToPostfix(withConcat);
+    cout << "Postfix Notation: " << postfix << "\n";
+
+    // 3. NFA construction (Thompson's)
+    cout << "\n========== NFA CONSTRUCTION (Thompson's) ==========\n";
+
+    NFABuilder builder;
+    NFASegment nfaResult = builder.constructFromPostfix(postfix);
+
+    int nfaStart  = nfaResult.startState;
+    int nfaAccept = nfaResult.endState;
+
+    vector<AutomatonState> nfa = builder.stateList;
+
+    // Build alphabet (all non-operator symbols in postfix)
+    set<char> alphabet;
+    for (char ch : postfix) {
+        if (!isRegexOperator(ch) && ch != '(' && ch != ')') {
+            alphabet.insert(ch);
+        }
+    }
+
+    cout << "Total NFA States: " << nfa.size() << "\n";
+    cout << "Start State: " << nfaStart << "\n";
+    cout << "Accept State: " << nfaAccept << "\n";
+    cout << "Alphabet: {";
+    for (char ch : alphabet) cout << ch << " ";
+    cout << "}\n";
+
+    printNFAMatrix(nfa, alphabet, nfaStart, nfaAccept);
+
+    // 4. DFA construction (Subset Construction)
+    cout << "\n========== DFA CONSTRUCTION (Subset Construction) ==========\n";
+
+    map<string, int> stateMapping;              // "set of NFA states" -> DFA state id
+    vector<set<int>> dfaStateList;              // DFA states as sets of NFA states
+    vector<map<char, int>> dfaTransitions;      // transitions for each DFA state
+    queue<int> processingQueue;
+    set<int> dfaAcceptStates;                   // we'll fill this later
+
+    // Initial DFA state = ε-closure({nfaStart})
+    set<int> initialSet = { nfaStart };
+    set<int> startClosure = computeEpsilonClosure(nfa, initialSet);
+
+    stateMapping[stateSetToString(startClosure)] = 0;
+    dfaStateList.push_back(startClosure);
+    dfaTransitions.push_back(map<char, int>());
+    processingQueue.push(0);
+
+    // BFS over DFA states
+    while (!processingQueue.empty()) {
+        int currentDFA = processingQueue.front();
+        processingQueue.pop();
+
+        const set<int>& currentStates = dfaStateList[currentDFA];
+
+        for (char symbol : alphabet) {
+            // Move on symbol from NFA states in this DFA state
+            set<int> afterMove = computeMove(nfa, currentStates, symbol);
+            if (afterMove.empty()) continue;
+
+            // ε-closure of the move result
+            set<int> closure = computeEpsilonClosure(nfa, afterMove);
+            string key = stateSetToString(closure);
+
+            // If this set not seen before, create new DFA state
+            if (stateMapping.find(key) == stateMapping.end()) {
+                int newStateID = static_cast<int>(dfaStateList.size());
+                stateMapping[key] = newStateID;
+                dfaStateList.push_back(closure);
+                dfaTransitions.push_back(map<char, int>());
+                processingQueue.push(newStateID);
+            }
+
+            int targetDFA = stateMapping[key];
+            dfaTransitions[currentDFA][symbol] = targetDFA;
+        }
+    }
+
+    // Determine DFA accept states (any DFA state containing nfaAccept)
+    for (size_t i = 0; i < dfaStateList.size(); i++) {
+        if (dfaStateList[i].count(nfaAccept)) {
+            dfaAcceptStates.insert(static_cast<int>(i));
+        }
+    }
+
+    cout << "Total DFA States: " << dfaStateList.size() << "\n";
+    cout << "Start State: 0\n";
+    cout << "Accept States: {";
+    for (int acc : dfaAcceptStates) cout << acc << " ";
+    cout << "}\n";
+
+    printDFAMatrix(dfaStateList, dfaTransitions, alphabet, dfaAcceptStates);
+
+    // 5. String testing
+    cout << "\n========== STRING TESTING ==========\n";
+    cout << "Enter number of test strings: ";
+    int numTests;
+    cin >> numTests;
+    cin.ignore(); // clear newline
+
+    for (int i = 0; i < numTests; i++) {
+        cout << "\nTest " << (i + 1) << " - Enter string: ";
+        string testStr;
+        getline(cin, testStr);
+
+        testStringOnDFA(testStr, dfaTransitions, dfaAcceptStates);
+    }
+
+    cout <<
+        "\n╔═══════════════════════════════════════════════════════╗\n";
+    cout <<
+        "║ PROCESSING COMPLETE                                  ║\n";
+    cout <<
+        "╚═══════════════════════════════════════════════════════╝\n";
+
     return 0;
 }
