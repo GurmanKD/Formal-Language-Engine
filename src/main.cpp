@@ -283,6 +283,94 @@ string stateSetToString(const set<int>& states) {
     return key;
 }
 
+void printNFAMatrix(const vector<AutomatonState>& nfa,
+                    const set<char>& alphabet,
+                    int start,
+                    int accept) {
+    cout << "\n========== NFA ADJACENCY MATRIX ==========\n";
+    cout << "Start State: " << start << " | Accept State: " << accept << "\n\n";
+
+    int n = static_cast<int>(nfa.size());
+    vector<char> symbols(alphabet.begin(), alphabet.end());
+
+    // Header
+    cout << setw(8) << "State";
+    for (char c : symbols) {
+        cout << setw(6) << c;
+    }
+    cout << setw(8) << "epsilon\n";
+
+    cout << string(8 + static_cast<int>(symbols.size()) * 6 + 8, '-') << "\n";
+
+    // Rows
+    for (int i = 0; i < n; i++) {
+        cout << setw(8) << i;
+
+        // For each symbol, print first destination or '-'
+        for (char c : symbols) {
+            auto it = nfa[i].symbolMoves.find(c);
+            if (it != nfa[i].symbolMoves.end() && !it->second.empty()) {
+                cout << setw(6) << it->second[0];
+            } else {
+                cout << setw(6) << "-";
+            }
+        }
+
+        // Epsilon moves
+        if (!nfa[i].epsilonMoves.empty()) {
+            cout << setw(8) << "{";
+            for (size_t j = 0; j < nfa[i].epsilonMoves.size(); j++) {
+                cout << nfa[i].epsilonMoves[j];
+                if (j + 1 < nfa[i].epsilonMoves.size()) cout << ",";
+            }
+            cout << "}";
+        } else {
+            cout << setw(8) << "-";
+        }
+
+        cout << "\n";
+    }
+}
+
+void printDFAMatrix(const vector<set<int>>& dfaStates,
+                    const vector<map<char, int>>& dfaTrans,
+                    const set<char>& alphabet,
+                    const set<int>& acceptStates) {
+    cout << "\n========== DFA ADJACENCY MATRIX ==========\n";
+    cout << "Start State: 0 | Accept States: {";
+    for (int acc : acceptStates) {
+        cout << acc << " ";
+    }
+    cout << "}\n\n";
+
+    vector<char> symbols(alphabet.begin(), alphabet.end());
+
+    // Header
+    cout << setw(10) << "State";
+    for (char c : symbols) {
+        cout << setw(8) << c;
+    }
+    cout << "\n";
+
+    cout << string(10 + static_cast<int>(symbols.size()) * 8, '-') << "\n";
+
+    // Rows
+    for (size_t i = 0; i < dfaStates.size(); i++) {
+        cout << setw(10) << i;
+
+        for (char c : symbols) {
+            auto it = dfaTrans[i].find(c);
+            if (it != dfaTrans[i].end()) {
+                cout << setw(8) << it->second;
+            } else {
+                cout << setw(8) << "-";
+            }
+        }
+
+        cout << "\n";
+    }
+}
+
 int main() {
     cout << "Regex to NFA to DFA Converter\n";
     return 0;
